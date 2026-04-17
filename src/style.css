@@ -186,7 +186,12 @@ body {
   color: var(--muted);
 }
 
-.todo-meta.due-soon {
+.todo-meta--soon {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.todo-meta--overdue {
   color: var(--danger);
   font-weight: 600;
 }
