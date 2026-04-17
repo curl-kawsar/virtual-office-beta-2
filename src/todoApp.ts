@@ -1,9 +1,27 @@
 import { createTodoId, loadTodos, saveTodos, type Todo } from "./todoStorage";
 
+function parseLocalDate(ymd: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  const date = new Date(y, mo, d);
+  if (date.getFullYear() !== y || date.getMonth() !== mo || date.getDate() !== d) {
+    return null;
+  }
+  return date;
+}
+
+function startOfToday(): Date {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
 function formatDueLabel(isoDate: string): string {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  if (!y || !m || !d) return isoDate;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  const due = parseLocalDate(isoDate);
+  if (!due) return isoDate;
+  return due.toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -11,26 +29,32 @@ function formatDueLabel(isoDate: string): string {
   });
 }
 
-function isDueWithinDays(isoDate: string, days: number): boolean {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  if (!y || !m || !d) return false;
-  const due = new Date(y, m - 1, d);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  due.setHours(0, 0, 0, 0);
-  const diffMs = due.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  return diffDays >= 0 && diffDays <= days;
-}
-
-function isPastDue(isoDate: string): boolean {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  if (!y || !m || !d) return false;
-  const due = new Date(y, m - 1, d);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  due.setHours(0, 0, 0, 0);
-  return due.getTime() < today.getTime();
+function dueMetaHtml(dueIso: string, completed: boolean): string {
+  if (completed) {
+    return `<div class="todo-meta">Due ${escapeHtml(formatDueLabel(dueIso))}</div>`;
+  }
+  const due = parseLocalDate(dueIso);
+  if (!due) {
+    return `<div class="todo-meta">Due ${escapeHtml(dueIso)}</div>`;
+  }
+  const today = startOfToday();
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000);
+  const shortDate = due.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  if (diffDays < 0) {
+    return `<div class="todo-meta todo-meta--overdue">Overdue (${escapeHtml(shortDate)})</div>`;
+  }
+  if (diffDays === 0) {
+    return `<div class="todo-meta todo-meta--soon">Due today (${escapeHtml(shortDate)})</div>`;
+  }
+  if (diffDays <= 3) {
+    const dayWord = diffDays === 1 ? "day" : "days";
+    return `<div class="todo-meta todo-meta--soon">Due in ${diffDays} ${dayWord} (${escapeHtml(shortDate)})</div>`;
+  }
+  return `<div class="todo-meta">Due ${escapeHtml(shortDate)}</div>`;
 }
 
 export function mountTodoApp(root: HTMLElement | null): void {
@@ -87,17 +111,7 @@ export function mountTodoApp(root: HTMLElement | null): void {
       })
       .map((todo) => {
         const completedClass = todo.completed ? "completed" : "";
-        const dueMeta =
-          todo.dueDate == null
-            ? ""
-            : (() => {
-                const label = formatDueLabel(todo.dueDate);
-                let cls = "todo-meta";
-                if (!todo.completed && isPastDue(todo.dueDate)) cls += " due-soon";
-                else if (!todo.completed && isDueWithinDays(todo.dueDate, 3))
-                  cls += " due-soon";
-                return `<div class="${cls}">Due ${label}</div>`;
-              })();
+        const dueMeta = todo.dueDate == null ? "" : dueMetaHtml(todo.dueDate, todo.completed);
         const toggleLabel = todo.completed ? "Mark incomplete" : "Mark complete";
         return `
           <li class="todo-item ${completedClass}" data-id="${escapeAttr(todo.id)}">
