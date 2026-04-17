@@ -1,6 +1,10 @@
 # Student Todo List
 
-A small, dependency-free todo list for students. Add tasks with an optional due date, mark them complete, or delete them. The list is stored in the browser using **localStorage** (data stays on this device and is not synced).
+A small, dependency-free todo list for students. Add tasks with an optional due date, mark them complete, or delete them. The app runs entirely in the browser—no backend.
+
+## Persistence
+
+Todos are stored in **`localStorage`** under the key `student-todo-list:v1`. Data stays on this device and browser; clearing site data for this site removes the list.
 
 ## Requirements
 
@@ -31,19 +35,29 @@ npm run preview
 
 ```bash
 npm run lint
-npm run test
+npm test
 ```
 
 ## How to use the app
 
-1. **Add a todo**: Enter a short title. Optionally pick a **due date** for assignments, then click **Add**.
+1. **Add a todo**: Enter a short **title**. Optionally pick a **due date** for assignments, then click **Add**.
 2. **Complete a todo**: Use the checkbox on the left to toggle between done and not done.
 3. **Delete a todo**: Click **Delete** on the row you want to remove.
 
-Todos are saved automatically in **localStorage** under the key `student-todo-list:v1`. Clearing site data for this origin will remove your list.
+Open tasks are listed before completed ones. Due dates are highlighted when they are overdue or within the next few days.
+
+## Scripts
+
+| Command           | Description                    |
+| ----------------- | ------------------------------ |
+| `npm run dev`     | Start Vite dev server          |
+| `npm run build`   | Typecheck and production build |
+| `npm run preview` | Serve the production build     |
+| `npm run lint`    | ESLint                         |
+| `npm test`        | Vitest unit tests              |
 
 ## Tech stack
 
-- [Vite](https://vitejs.dev/) + TypeScript (no React/Vue — plain DOM for a minimal footprint)
+- [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/) (plain DOM for a minimal footprint)
 - [ESLint](https://eslint.org/) flat config
 - [Vitest](https://vitest.dev/) for unit tests
